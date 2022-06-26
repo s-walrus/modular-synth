@@ -96,7 +96,7 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
 
     SynthUnitTreeTraversal<n_nodes> traversal{
         .buf_size = 1 + kSynthUnitInputs + n_nodes,
-        .steps = {nullptr},
+        .steps = {{{nullptr}}},
     };
     const std::size_t buf_outputs_offset = 5;
     for (std::size_t i = 0; !topsort.Empty(); ++i, topsort.PopFront()) {

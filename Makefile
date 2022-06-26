@@ -2,7 +2,7 @@ prep:
 	mkdir -p build
 
 scratch: prep
-	g++ -Wall -D__LINUX_PULSE__ -o build/scratch -lpthread -lpulse-simple -lpulse lib/* src/*
+	clang++ -g -std=c++20 -Wall -D__LINUX_PULSE__ -o build/scratch -lpthread -lpulse-simple -lpulse lib/RtAudio.cpp src/scratch.cpp
 
 run:
 	build/scratch
