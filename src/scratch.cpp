@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../lib/RtAudio.h"
 #include "unit.h"
 
 SynthData ModSine(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
@@ -65,12 +64,8 @@ int main(int argc, char** argv) {
         return -5;
     }
 
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(main_loop__em, 0, 1);
-#else
     printf("Press Enter to quit...\n");
     getchar();
-#endif
 
     ma_device_uninit(&device);
 

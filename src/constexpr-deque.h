@@ -3,7 +3,7 @@
 #include <type_traits>
 
 template <typename T, std::size_t capacity>
-requires std::is_integral_v<T>
+requires std::is_trivial_v<T>
 class Deque {
 public:
     constexpr Deque() = default;

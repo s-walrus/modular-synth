@@ -1,3 +1,4 @@
+#pragma once
 #include <atomic>
 #include <type_traits>
 
@@ -10,7 +11,7 @@ public:
     size_t Size() const { return N; }
 
     // non-atomic, no sync between threads
-    T& operator[](size_t index) { return buf[index]; }
+    T& operator[](const size_t index) { return buf[index]; }
 
     // atomic
     size_t GetBeginIndex() const {
@@ -19,10 +20,10 @@ public:
     size_t GetEndIndex() const {  //
         return endIndex.load(std::memory_order_acquire);
     }
-    void UpdateBeginIndex(size_t val) {
+    void UpdateBeginIndex(const size_t val) {
         beginIndex.store(val, std::memory_order_release);
     }
-    void UpdateEndIndex(size_t val) {
+    void UpdateEndIndex(const size_t val) {
         endIndex.store(val, std::memory_order_release);
     }
 
