@@ -1,6 +1,37 @@
 #pragma once
+#include <array>
 #include <atomic>
+#include <cassert>
 #include <type_traits>
+
+// Basic Buffer is designed for 1 producer - 1 consumer
+template <typename T, size_t N>
+requires std::is_trivial_v<T>
+class BasicBuffer {
+public:
+    BasicBuffer() = default;
+
+    // TODO check if memory order makes a difference performance-wise
+    bool CanPost() const { return is_full.load(); }
+    bool CanReceive() const { return is_full.load(); }
+
+    void ReceiveTo(std::array<T, N>& dest) {
+        assert(CanReceive());
+        // TODO what will it compile to?
+        dest = buf;
+        is_full = false;
+    }
+
+    void PostFrom(const std::array<T, N>& dest) {
+        assert(CanPost());
+        buf = dest;
+        is_full = true;
+    }
+
+private:
+    std::atomic_bool is_full = false;
+    std::array<T, N> buf;
+};
 
 // CyclicBuffer allows one-way communication between 2 threads: producer writes
 // data to the end, while consumer reads from the beginning
