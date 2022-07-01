@@ -26,7 +26,7 @@ private:
     };
 
     std::size_t kThreadCount;
-    std::vector<std::list<Node>> tasks;
+    std::vector<std::list<Node>> assigned_nodes;
 
     std::vector<Node>& MakeTasks(/* tree of SynthUnits */);
     void ScheduleTasks(const std::vector<Node>&);

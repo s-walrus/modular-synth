@@ -35,3 +35,15 @@ void Synth::Node::ProcessData() {
 
     output.PostFrom(output_buf);
 }
+
+void Synth::StartWorker(std::size_t worker_id) {
+    while (true) {
+        for (Node& node : assigned_nodes[worker_id]) {
+            // TODO it may be better to do just a single node.ProcessData,
+            // compare both approaches in performance
+            while (node.CanProcessData()) {
+                node.ProcessData();
+            }
+        }
+    }
+}
