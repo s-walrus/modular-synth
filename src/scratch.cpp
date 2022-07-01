@@ -4,6 +4,11 @@
 
 #include "unit.h"
 
+#define MA_NO_DECODING
+#define MA_NO_ENCODING
+#define MINIAUDIO_IMPLEMENTATION
+#include "../lib/miniaudio.h"
+
 SynthData ModSine(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
     static std::uint32_t time = 0;
     ++time;
@@ -11,18 +16,14 @@ SynthData ModSine(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
 }
 
 constexpr SynthUnit su =
-    RunSynthUnit<1, MakeSynthUnitTreeTraversal<1>(std::array<SynthUnitNode, 1>{
-                        SynthUnitNode{
-                            .unit = ModSine,
-                            .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                       kSynthUnitNoInput, kSynthUnitNoInput},
-                        },
-                    })>;
-
-#define MA_NO_DECODING
-#define MA_NO_ENCODING
-#define MINIAUDIO_IMPLEMENTATION
-#include "../lib/miniaudio.h"
+    RunSynthUnitTree<1,
+                     MakeSynthUnitTreeTraversal<1>(std::array<SynthUnitNode, 1>{
+                         SynthUnitNode{
+                             .unit = ModSine,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                     })>;
 
 const std::size_t kSampleRate = 48000;
 

@@ -35,8 +35,8 @@ struct SynthUnitTreeTraversal {
 // For each SynthUnit, a separate RunSynthUnit function must be generated,
 // unless local SynthUnit memory is not desired.
 template <std::size_t n_nodes, SynthUnitTreeTraversal<n_nodes> traversal>
-static constexpr SynthData RunSynthUnit(SynthData i1, SynthData i2,
-                                        SynthData i3, SynthData i4) {
+static constexpr SynthData RunSynthUnitTree(SynthData i1, SynthData i2,
+                                            SynthData i3, SynthData i4) {
     SynthData buf[traversal.buf_size];
     buf[0] = 0;
     buf[1] = i1;

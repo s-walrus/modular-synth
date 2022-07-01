@@ -1,3 +1,4 @@
+#pragma once
 #include "unit.h"
 
 template <SynthData val>
