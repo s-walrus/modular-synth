@@ -12,22 +12,23 @@ public:
     void Run();
 
 private:
-    static const std::size_t kBufferSize = 256;
-    // FIXME BasicBuffer is a temporary solution. A buffer should have multiple
-    // fillable slots or support for partial saturation, otherwise BasicBuffer
-    // must be cleverly used to make use of concurrency.
-    using Buffer = BasicBuffer<SynthData, kBufferSize>;
+    static const std::size_t kBatchSize = 256;
+    // TODO replace BasicBuffer with one that supports partial saturation
+    using Buffer = BasicBuffer<SynthData, kBatchSize>;
 
-    class Task {
-    public:
-        bool CanRun() const;
-        void Run();
+    struct Node {
+        SynthUnit synth_unit;
+        Buffer output;
+        Buffer* const inputs[kSynthUnitInputs]{0};
+
+        bool CanProcessData() const;
+        void ProcessData();
     };
 
     std::size_t kThreadCount;
-    std::vector<std::list<Task>> tasks;
+    std::vector<std::list<Node>> tasks;
 
-    std::vector<Task>& MakeTasks(/* tree of SynthUnits */);
-    void ScheduleTasks(const std::vector<Task>&);
+    std::vector<Node>& MakeTasks(/* tree of SynthUnits */);
+    void ScheduleTasks(const std::vector<Node>&);
     void StartWorker(std::size_t worker_id);
 };
