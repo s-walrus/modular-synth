@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <iostream>
 #include <thread>
 
@@ -69,15 +70,21 @@ void Synth::MakeAndAssignNodes(
 }
 
 void Synth::StartWorker(std::size_t worker_id) {
+    bool have_executed_any_node;
     while (!workers_must_exit.load(std::memory_order_consume)) {
+        have_executed_any_node = false;
         for (Node& node : assigned_nodes[worker_id]) {
             // TODO it may be better to do just a single node.ProcessData,
             // compare both approaches in performance
             while (node.CanProcessData()) {
                 node.ProcessData();
+                have_executed_any_node = true;
             }
-            // TODO what if assigned_nodes are empty? what if no nodes can
-            // process data? probably should add waiting mechanism
+        }
+        if (!have_executed_any_node) {
+            // TODO dynamically update sleep_time
+            const auto sleep_time = std::chrono::milliseconds(20);
+            std::this_thread::sleep_for(sleep_time);
         }
     }
 }
