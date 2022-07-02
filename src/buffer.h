@@ -9,8 +9,6 @@ template <typename T, size_t N>
 requires std::is_trivial_v<T>
 class BasicBuffer {
 public:
-    BasicBuffer() = default;
-
     // TODO check if memory order makes a difference performance-wise
     bool CanPost() const { return is_full.load(); }
     bool CanReceive() const { return is_full.load(); }

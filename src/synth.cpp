@@ -3,13 +3,37 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <iostream>
+#include <thread>
+
+Synth::Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads)
+    : kThreadCount(n_threads) {
+    auto nodes = MakeNodes(synth_unit_tree);
+    AssignNodes(std::move(nodes));
+}
+
+void Synth::Run() {
+    std::vector<std::thread> threads;
+    for (std::size_t i = 0; i < kThreadCount; ++i) {
+        threads.emplace_back(
+            [this](std::size_t worker_id) { StartWorker(worker_id); }, i);
+    }
+
+    std::cout << "Press Enter to quit..." << std::endl;
+    getchar();
+
+    workers_must_exit = true;
+    for (std::size_t i = 0; i < kThreadCount; ++i) {
+        threads[i].join();
+    }
+}
 
 bool Synth::Node::CanProcessData() const {
     bool isInputDataAvailable = true;
     for (const Buffer* buf_p : inputs) {
         isInputDataAvailable &= buf_p == nullptr || buf_p->CanReceive();
     }
-    return isInputDataAvailable && output.CanPost();
+    return isInputDataAvailable && output->CanPost();
 }
 
 void Synth::Node::ProcessData() {
@@ -33,11 +57,11 @@ void Synth::Node::ProcessData() {
                                    input_bufs[2][i], input_bufs[3][i]);
     }
 
-    output.PostFrom(output_buf);
+    output->PostFrom(output_buf);
 }
 
 void Synth::StartWorker(std::size_t worker_id) {
-    while (true) {
+    while (!workers_must_exit.load(std::memory_order_consume)) {
         for (Node& node : assigned_nodes[worker_id]) {
             // TODO it may be better to do just a single node.ProcessData,
             // compare both approaches in performance

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <list>
+#include <memory>
 #include <vector>
 
 #include "buffer.h"
@@ -8,7 +9,7 @@
 
 class Synth {
 public:
-    Synth(/* tree of SynthUnits, number of threads */);
+    Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads);
     void Run();
 
 private:
@@ -18,7 +19,7 @@ private:
 
     struct Node {
         SynthUnit synth_unit;
-        Buffer output;
+        const std::unique_ptr<Buffer> output;
         Buffer* const inputs[kSynthUnitInputs]{0};
 
         bool CanProcessData() const;
@@ -27,8 +28,10 @@ private:
 
     std::size_t kThreadCount;
     std::vector<std::list<Node>> assigned_nodes;
+    std::atomic_bool workers_must_exit = false;
 
-    std::vector<Node>& MakeTasks(/* tree of SynthUnits */);
-    void ScheduleTasks(const std::vector<Node>&);
+    std::vector<Node> MakeNodes(
+        const std::vector<SynthUnitNode>& synth_unit_tree);
+    void AssignNodes(std::vector<Node>);
     void StartWorker(std::size_t worker_id);
 };

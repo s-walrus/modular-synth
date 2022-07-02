@@ -10,7 +10,7 @@ typedef SynthData (*SynthUnit)(SynthData, SynthData, SynthData, SynthData);
 const std::size_t kSynthUnitInputs = 4;
 const std::int32_t kSynthUnitNoInput = -5;
 
-// SynthUnitNode describes SynthUnit as a node of another SynthUnit tree
+// SynthUnitNode describes SynthUnit as a node of a tree
 struct SynthUnitNode {
     SynthUnit unit;
     int32_t inputs[kSynthUnitInputs];
