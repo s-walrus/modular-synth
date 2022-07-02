@@ -20,7 +20,7 @@ private:
     struct Node {
         SynthUnit synth_unit;
         const std::unique_ptr<Buffer> output;
-        Buffer* const inputs[kSynthUnitInputs]{0};
+        std::array<Buffer* const, kSynthUnitInputs> inputs{0};
 
         bool CanProcessData() const;
         void ProcessData();
@@ -30,8 +30,6 @@ private:
     std::vector<std::list<Node>> assigned_nodes;
     std::atomic_bool workers_must_exit = false;
 
-    std::vector<Node> MakeNodes(
-        const std::vector<SynthUnitNode>& synth_unit_tree);
-    void AssignNodes(std::vector<Node>);
+    void MakeAndAssignNodes(const std::vector<SynthUnitNode>& synth_unit_tree);
     void StartWorker(std::size_t worker_id);
 };

@@ -8,8 +8,7 @@
 
 Synth::Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads)
     : kThreadCount(n_threads) {
-    auto nodes = MakeNodes(synth_unit_tree);
-    AssignNodes(std::move(nodes));
+    MakeAndAssignNodes(synth_unit_tree);
 }
 
 void Synth::Run() {
@@ -25,6 +24,61 @@ void Synth::Run() {
     workers_must_exit = true;
     for (std::size_t i = 0; i < kThreadCount; ++i) {
         threads[i].join();
+    }
+}
+
+void Synth::MakeAndAssignNodes(
+    const std::vector<SynthUnitNode>& synth_unit_tree) {
+    // Make nodes
+    struct MutableNode {
+        SynthUnit synth_unit;
+        std::unique_ptr<Buffer> output;
+        std::array<Buffer*, kSynthUnitInputs> inputs{0};
+    };
+    std::vector<MutableNode> nodes(synth_unit_tree.size());
+    for (std::size_t i = 0; i < synth_unit_tree.size(); ++i) {
+        nodes[i].synth_unit = synth_unit_tree[i].unit;
+        nodes[i].output.reset(new Buffer);
+        for (std::size_t n_input = 0; n_input < kSynthUnitInputs; ++n_input) {
+            if (synth_unit_tree[i].inputs[n_input] >= 0) {
+                nodes[i].inputs[n_input] =
+                    nodes[synth_unit_tree[i].inputs[n_input]].output.get();
+            } else {
+                nodes[i].inputs[n_input] = nullptr;
+            }
+        }
+    }
+
+    // Assign nodes
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+        Node node = {
+            .synth_unit = nodes[i].synth_unit,
+            .output = std::move(nodes[i].output),
+            // FIXME desperately looking for a better way to make these
+            // enumerations
+            .inputs =
+                {
+                    nodes[i].inputs[0],
+                    nodes[i].inputs[1],
+                    nodes[i].inputs[2],
+                    nodes[i].inputs[3],
+                },
+        };
+        assigned_nodes[i % assigned_nodes.size()].push_back(std::move(node));
+    }
+}
+
+void Synth::StartWorker(std::size_t worker_id) {
+    while (!workers_must_exit.load(std::memory_order_consume)) {
+        for (Node& node : assigned_nodes[worker_id]) {
+            // TODO it may be better to do just a single node.ProcessData,
+            // compare both approaches in performance
+            while (node.CanProcessData()) {
+                node.ProcessData();
+            }
+            // TODO what if assigned_nodes are empty? what if no nodes can
+            // process data? probably should add waiting mechanism
+        }
     }
 }
 
@@ -58,16 +112,4 @@ void Synth::Node::ProcessData() {
     }
 
     output->PostFrom(output_buf);
-}
-
-void Synth::StartWorker(std::size_t worker_id) {
-    while (!workers_must_exit.load(std::memory_order_consume)) {
-        for (Node& node : assigned_nodes[worker_id]) {
-            // TODO it may be better to do just a single node.ProcessData,
-            // compare both approaches in performance
-            while (node.CanProcessData()) {
-                node.ProcessData();
-            }
-        }
-    }
 }
