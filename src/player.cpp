@@ -22,7 +22,9 @@ void MiniaudioOutput::MiniaudioCallback(ma_device* device_p, void* output_p,
 
 MiniaudioOutput::MiniaudioOutput(Synth::Buffer* output_buffer,
                                  std::size_t sample_rate)
-    : output_buf(output_buffer), kSampleRate(sample_rate) {
+    : output_buf(output_buffer),
+      kSampleRate(sample_rate),
+      callbackData({.buffer = output_buffer, .data_gen = 0}) {
     ma_device_config deviceConfig;
 
     deviceConfig = ma_device_config_init(ma_device_type_playback);
@@ -31,6 +33,7 @@ MiniaudioOutput::MiniaudioOutput(Synth::Buffer* output_buffer,
     deviceConfig.sampleRate = kSampleRate;
     deviceConfig.dataCallback = MiniaudioCallback;
     deviceConfig.pUserData = &callbackData;
+    deviceConfig.periodSizeInFrames = Synth::kBatchSize;
     // deviceConfig.stopCallback = ???
 
     if (ma_device_init(NULL, &deviceConfig, &output_device) != MA_SUCCESS) {
@@ -43,9 +46,6 @@ void MiniaudioOutput::Start() {
         ma_device_uninit(&output_device);
         throw "Failed to start playback device.";
     }
-
-    printf("Press Enter to quit...\n");
-    getchar();
-
-    ma_device_uninit(&output_device);
 }
+
+void MiniaudioOutput::Stop() { ma_device_uninit(&output_device); }

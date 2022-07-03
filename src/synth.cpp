@@ -8,20 +8,18 @@
 #include <thread>
 
 Synth::Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads)
-    : kThreadCount(n_threads) {
+    : kThreadCount(n_threads), assigned_nodes(n_threads), threads(n_threads) {
     MakeAndAssignNodes(synth_unit_tree);
 }
 
-void Synth::Run() {
-    std::vector<std::thread> threads;
+void Synth::Start() {
     for (std::size_t i = 0; i < kThreadCount; ++i) {
         threads.emplace_back(
             [this](std::size_t worker_id) { StartWorker(worker_id); }, i);
     }
+}
 
-    std::cout << "Press Enter to quit..." << std::endl;
-    getchar();
-
+void Synth::Stop() {
     workers_must_exit = true;
     for (std::size_t i = 0; i < kThreadCount; ++i) {
         threads[i].join();
@@ -69,20 +67,8 @@ void Synth::MakeAndAssignNodes(
 
     // Assign nodes
     for (std::size_t i = 0; i < nodes.size(); ++i) {
-        Node node = {
-            .synth_unit = nodes[i].synth_unit,
-            .output = std::move(nodes[i].output),
-            // FIXME desperately looking for a better way to make these
-            // enumerations
-            .inputs =
-                {
-                    nodes[i].inputs[0],
-                    nodes[i].inputs[1],
-                    nodes[i].inputs[2],
-                    nodes[i].inputs[3],
-                },
-        };
-        assigned_nodes[i % assigned_nodes.size()].push_back(std::move(node));
+        assigned_nodes[i % assigned_nodes.size()].emplace_back(
+            nodes[i].synth_unit, std::move(nodes[i].output), nodes[i].inputs);
     }
 }
 
@@ -100,8 +86,8 @@ void Synth::StartWorker(std::size_t worker_id) {
         }
         if (!have_executed_any_node) {
             // TODO dynamically update sleep_time
-            const auto sleep_time = std::chrono::milliseconds(20);
-            std::this_thread::sleep_for(sleep_time);
+            // const auto sleep_time = std::chrono::milliseconds(0);
+            // std::this_thread::sleep_for(sleep_time);
         }
     }
 }
@@ -123,9 +109,10 @@ void Synth::Node::ProcessData() {
         if (inputs[n_input]) {
             inputs[n_input]->ReceiveTo(input_bufs[n_input]);
         } else {
-            assert(std::all_of(input_bufs[n_input].begin(),
+            input_bufs[n_input] = {0};
+            /* assert(std::all_of(input_bufs[n_input].begin(),
                                input_bufs[n_input].end(),
-                               [](SynthData x) { return x == 0; }));
+                               [](SynthData x) { return x == 0; })); */
         }
     }
 

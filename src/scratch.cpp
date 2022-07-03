@@ -1,74 +1,92 @@
 #include <cmath>
-#include <cstdlib>
 #include <iostream>
 
+#include "player.h"
+#include "synth.h"
 #include "unit.h"
-
-#define MA_NO_DECODING
-#define MA_NO_ENCODING
-#define MINIAUDIO_IMPLEMENTATION
-#include "../lib/miniaudio.h"
-
-SynthData ModSine(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
-    static std::uint32_t time = 0;
-    ++time;
-    return (std::sin((double)time / 10)) * (1 << 30);
-}
-
-constexpr SynthUnit su =
-    RunSynthUnitTree<1,
-                     MakeSynthUnitTreeTraversal<1>(std::array<SynthUnitNode, 1>{
-                         SynthUnitNode{
-                             .unit = ModSine,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                     })>;
 
 const std::size_t kSampleRate = 48000;
 
-void data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
-                   ma_uint32 frameCount) {
-    SynthData* output = (SynthData*)pOutput;
-
-    /* This callback is tied to the specific sample format and rate. */
-    /* Populate 'pOutput' with 'frameCount' frames. */
-    for (int curFrame = 0; curFrame < frameCount; ++curFrame) {
-        SynthData val = su(0, 0, 0, 0);
-        output[curFrame * 2 + 0] = val;
-        output[curFrame * 2 + 1] = val;
-    }
-
-    (void)pInput; /* Unused. */
+template <std::size_t freq>
+SynthData ModSine(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
+    const static double time_mod = 2 * M_PI / kSampleRate * freq;
+    static std::uint32_t time = 0;
+    ++time;
+    return (std::sin((double)time / 40)) * (1 << 28);
 }
 
+SynthData ModGentleStart(SynthData i1, SynthData i2, SynthData i3,
+                         SynthData i4) {
+    static std::uint32_t time = 0;
+    const std::uint32_t kStartLength = 44000;
+    if (time < kStartLength) {
+        ++time;
+    }
+    return i1 * ((double)time / kStartLength);
+}
+
+SynthData ModMixer(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
+    return i1 + i2 + i3 + i4;
+}
+
+constexpr SynthUnit e_min_su =
+    RunSynthUnitTree<8,
+                     MakeSynthUnitTreeTraversal<8>(std::array<SynthUnitNode, 8>{
+                         SynthUnitNode{
+                             .unit = ModSine<82410>,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                         SynthUnitNode{
+                             .unit = ModSine<130810>,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                         SynthUnitNode{
+                             .unit = ModSine<164010>,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                         SynthUnitNode{
+                             .unit = ModSine<196000>,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                         SynthUnitNode{
+                             .unit = ModSine<246940>,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                         SynthUnitNode{
+                             .unit = ModSine<329630>,
+                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
+                                        kSynthUnitNoInput, kSynthUnitNoInput},
+                         },
+                         SynthUnitNode{
+                             .unit = ModMixer,
+                             .inputs = {0, 1, 2, 3},
+                         },
+                         SynthUnitNode{
+                             .unit = ModMixer,
+                             .inputs = {6, 4, 5, kSynthUnitNoInput},
+                         },
+                     })>;
+
 int main(int argc, char** argv) {
-    ma_device_config deviceConfig;
-    ma_device device;
+    Synth synth{{SynthUnitNode{e_min_su,
+                               {kSynthUnitNoInput, kSynthUnitNoInput,
+                                kSynthUnitNoInput, kSynthUnitNoInput}},
+                 SynthUnitNode{ModGentleStart,
+                               {0, kSynthUnitNoInput, kSynthUnitNoInput,
+                                kSynthUnitNoInput}}},
+                2};
+    MiniaudioOutput player{synth.GetOutputBuffer(), kSampleRate};
+    synth.Start();
+    player.Start();
 
-    deviceConfig = ma_device_config_init(ma_device_type_playback);
-    deviceConfig.playback.format = ma_format_s32;
-    deviceConfig.playback.channels = 2;
-    deviceConfig.sampleRate = kSampleRate;
-    deviceConfig.dataCallback = data_callback;
-
-    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
-        printf("Failed to open playback device.\n");
-        return -4;
-    }
-
-    printf("Device Name: %s\n", device.playback.name);
-
-    if (ma_device_start(&device) != MA_SUCCESS) {
-        printf("Failed to start playback device.\n");
-        ma_device_uninit(&device);
-        return -5;
-    }
-
-    printf("Press Enter to quit...\n");
+    std::cout << "Press ENTER to quit..." << std::endl;
     getchar();
 
-    ma_device_uninit(&device);
-
-    return 0;
+    player.Stop();
+    synth.Stop();
 }

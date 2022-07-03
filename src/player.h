@@ -11,6 +11,7 @@ public:
     MiniaudioOutput(Synth::Buffer* output_buffer,
                     std::size_t sample_rate = 48000);
     void Start();
+    void Stop();
 
 private:
     const std::size_t kSampleRate;

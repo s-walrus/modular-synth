@@ -12,15 +12,18 @@ class BasicBuffer {
 public:
     using DataGeneration = std::uint16_t;
 
-    BasicBuffer(size_t n_consumers) : n_consumers(n_consumers) {}
+    BasicBuffer(size_t n_consumers)
+        : n_consumers(n_consumers), receiver_cnt(n_consumers) {}
 
     bool CanPost() const { return receiver_cnt.load() == n_consumers; }
     bool CanReceive(std::size_t last_received_generation) const {
+        // FIXME this assert must hold true but it doesn't (in gdb it does
+        // suprisingly, maybe, it's a data-race)
+        // assert(last_received_generation == generation.load() || !CanPost());
         return last_received_generation != generation.load();
     }
 
     DataGeneration ReceiveTo(std::array<T, N>& dest) {
-        assert(CanReceive());
         // TODO what will it compile to?
         dest = buf;
         receiver_cnt.fetch_add(1);
@@ -39,7 +42,7 @@ private:
     // TODO support thread-safe n_consumers modification
     const std::size_t n_consumers;
     std::atomic<DataGeneration> generation = 0;
-    std::atomic_size_t receiver_cnt = 0;
+    std::atomic_size_t receiver_cnt;
     std::array<T, N> buf;
 };
 
