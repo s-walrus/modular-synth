@@ -1,9 +1,9 @@
 #include <cmath>
 #include <iostream>
 
-#include "player.h"
-#include "synth.h"
-#include "unit.h"
+#include "../src/player.h"
+#include "../src/synth.h"
+#include "../src/unit.h"
 
 const std::size_t kSampleRate = 48000;
 
