@@ -15,6 +15,7 @@ public:
 
     Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads);
     void Run();
+    Buffer* GetOutputBuffer();
 
 private:
     struct Node {
@@ -33,6 +34,7 @@ private:
     std::size_t kThreadCount;
     std::vector<std::list<Node>> assigned_nodes;
     std::atomic_bool workers_must_exit = false;
+    Buffer* output_buffer;
 
     void MakeAndAssignNodes(const std::vector<SynthUnitNode>& synth_unit_tree);
     void StartWorker(std::size_t worker_id);

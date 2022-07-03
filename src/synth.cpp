@@ -28,6 +28,8 @@ void Synth::Run() {
     }
 }
 
+Synth::Buffer* Synth::GetOutputBuffer() { return output_buffer; }
+
 void Synth::MakeAndAssignNodes(
     const std::vector<SynthUnitNode>& synth_unit_tree) {
     // Count receivers
@@ -63,6 +65,7 @@ void Synth::MakeAndAssignNodes(
             }
         }
     }
+    output_buffer = nodes.back().output.get();
 
     // Assign nodes
     for (std::size_t i = 0; i < nodes.size(); ++i) {
