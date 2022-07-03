@@ -30,6 +30,20 @@ void Synth::Run() {
 
 void Synth::MakeAndAssignNodes(
     const std::vector<SynthUnitNode>& synth_unit_tree) {
+    // Count receivers
+    std::vector<std::size_t> receiver_cnt(synth_unit_tree.size(), 0);
+    for (std::size_t i = 0; i < synth_unit_tree.size(); ++i) {
+        for (auto input : synth_unit_tree[i].inputs) {
+            if (input >= 0) {
+                ++receiver_cnt[input];
+            }
+        }
+    }
+    if (receiver_cnt.back()) {
+        throw "last node of SynthUnit tree must be the output unit, but it is a dependency of another SynthUnit";
+    }
+    receiver_cnt.back() = 1;
+
     // Make nodes
     struct MutableNode {
         SynthUnit synth_unit;
@@ -39,7 +53,7 @@ void Synth::MakeAndAssignNodes(
     std::vector<MutableNode> nodes(synth_unit_tree.size());
     for (std::size_t i = 0; i < synth_unit_tree.size(); ++i) {
         nodes[i].synth_unit = synth_unit_tree[i].unit;
-        nodes[i].output.reset(new Buffer);
+        nodes[i].output.reset(new Buffer{receiver_cnt[i]});
         for (std::size_t n_input = 0; n_input < kSynthUnitInputs; ++n_input) {
             if (synth_unit_tree[i].inputs[n_input] >= 0) {
                 nodes[i].inputs[n_input] =
@@ -91,8 +105,8 @@ void Synth::StartWorker(std::size_t worker_id) {
 
 bool Synth::Node::CanProcessData() const {
     bool isInputDataAvailable = true;
-    for (const Buffer* buf_p : inputs) {
-        isInputDataAvailable &= buf_p == nullptr || buf_p->CanReceive();
+    for (const Buffer* input : inputs) {
+        isInputDataAvailable &= input == nullptr || input->CanReceive(data_gen);
     }
     return isInputDataAvailable && output->CanPost();
 }
@@ -118,5 +132,5 @@ void Synth::Node::ProcessData() {
                                    input_bufs[2][i], input_bufs[3][i]);
     }
 
-    output->PostFrom(output_buf);
+    data_gen = output->PostFrom(output_buf);
 }

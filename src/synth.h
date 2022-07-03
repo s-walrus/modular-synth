@@ -21,6 +21,10 @@ private:
         SynthUnit synth_unit;
         const std::unique_ptr<Buffer> output;
         std::array<Buffer* const, kSynthUnitInputs> inputs{0};
+        // WARNING it is assumed that data generation is synchronized between
+        // all buffers, i.e. for calculating k-th batch of output, data of k-th
+        // generation is used. This asumption should be reflected in source code
+        Buffer::DataGeneration data_gen = 0;
 
         bool CanProcessData() const;
         void ProcessData();

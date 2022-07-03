@@ -4,30 +4,42 @@
 #include <cassert>
 #include <type_traits>
 
-// Basic Buffer is designed for 1 producer - 1 consumer
+// Basic Buffer is designed for 1 producer - N consumers
+// (there definitely is a room for improvement in performance)
 template <typename T, size_t N>
 requires std::is_trivial_v<T>
 class BasicBuffer {
 public:
-    // TODO check if memory order makes a difference performance-wise
-    bool CanPost() const { return is_full.load(); }
-    bool CanReceive() const { return is_full.load(); }
+    using DataGeneration = std::uint16_t;
 
-    void ReceiveTo(std::array<T, N>& dest) {
+    BasicBuffer(size_t n_consumers) : n_consumers(n_consumers) {}
+
+    bool CanPost() const { return receiver_cnt.load() == n_consumers; }
+    bool CanReceive(std::size_t last_received_generation) const {
+        return last_received_generation != generation.load();
+    }
+
+    DataGeneration ReceiveTo(std::array<T, N>& dest) {
         assert(CanReceive());
         // TODO what will it compile to?
         dest = buf;
-        is_full = false;
+        receiver_cnt.fetch_add(1);
+        return generation.load();
     }
 
-    void PostFrom(const std::array<T, N>& dest) {
+    DataGeneration PostFrom(const std::array<T, N>& dest) {
         assert(CanPost());
         buf = dest;
-        is_full = true;
+        generation.fetch_add(1, std::memory_order_seq_cst);
+        receiver_cnt.store(0, std::memory_order_seq_cst);
+        return generation.load();
     }
 
 private:
-    std::atomic_bool is_full = false;
+    // TODO support thread-safe n_consumers modification
+    const std::size_t n_consumers;
+    std::atomic<DataGeneration> generation = 0;
+    std::atomic_size_t receiver_cnt = 0;
     std::array<T, N> buf;
 };
 
