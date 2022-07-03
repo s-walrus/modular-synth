@@ -9,14 +9,14 @@
 
 class Synth {
 public:
-    Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads);
-    void Run();
-
-private:
     static const std::size_t kBatchSize = 256;
     // TODO replace BasicBuffer with one that supports partial saturation
     using Buffer = BasicBuffer<SynthData, kBatchSize>;
 
+    Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads);
+    void Run();
+
+private:
     struct Node {
         SynthUnit synth_unit;
         const std::unique_ptr<Buffer> output;
