@@ -14,8 +14,8 @@ Synth::Synth(std::vector<SynthUnitNode> synth_unit_tree, std::size_t n_threads)
 
 void Synth::Start() {
     for (std::size_t i = 0; i < kThreadCount; ++i) {
-        threads.emplace_back(
-            [this](std::size_t worker_id) { StartWorker(worker_id); }, i);
+        threads[i] = std::thread{
+            [this](std::size_t worker_id) { StartWorker(worker_id); }, i};
     }
 }
 
