@@ -5,6 +5,8 @@
 #include "../src/synth.h"
 #include "../src/unit.h"
 
+const auto NOINP = kSynthNoInput;
+
 const std::size_t kSampleRate = 48000;
 
 template <std::size_t freq>
@@ -30,72 +32,54 @@ SynthData ModMixer(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
 }
 
 constexpr SynthUnit e_min_part1 =
-    RunSynthUnitTree<5,
-                     MakeSynthUnitTreeTraversal<5>(std::array<SynthUnitNode, 5>{
-                         SynthUnitNode{
-                             .unit = ModSine<196000>,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModSine<246940>,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModSine<329630>,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModMixer,
-                             .inputs = {0, 1, 2, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModGentleStart<kSampleRate / 2>,
-                             .inputs = {3, kSynthUnitInputs, kSynthUnitInputs,
-                                        kSynthUnitNoInput},
-                         },
-                     })>;
+    CompileSynthUnit<SynthUnitNode{
+                         .unit = ModSine<196000>,
+                         .inputs = {NOINP, NOINP, NOINP, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModSine<246940>,
+                         .inputs = {NOINP, NOINP, NOINP, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModSine<329630>,
+                         .inputs = {NOINP, NOINP, NOINP, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModMixer,
+                         .inputs = {0, 1, 2, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModGentleStart<kSampleRate / 2>,
+                         .inputs = {3, NOINP, NOINP, NOINP},
+                     }>;
 
 constexpr SynthUnit e_min_part2 =
-    RunSynthUnitTree<5,
-                     MakeSynthUnitTreeTraversal<5>(std::array<SynthUnitNode, 5>{
-                         SynthUnitNode{
-                             .unit = ModSine<130810>,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModSine<82410>,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModSine<164010>,
-                             .inputs = {kSynthUnitNoInput, kSynthUnitNoInput,
-                                        kSynthUnitNoInput, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModMixer,
-                             .inputs = {0, 1, 2, kSynthUnitNoInput},
-                         },
-                         SynthUnitNode{
-                             .unit = ModGentleStart<kSampleRate * 2>,
-                             .inputs = {3, kSynthUnitInputs, kSynthUnitInputs,
-                                        kSynthUnitNoInput},
-                         },
-                     })>;
+    CompileSynthUnit<SynthUnitNode{
+                         .unit = ModSine<130810>,
+                         .inputs = {NOINP, NOINP, NOINP, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModSine<82410>,
+                         .inputs = {NOINP, NOINP, NOINP, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModSine<164010>,
+                         .inputs = {NOINP, NOINP, NOINP, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModMixer,
+                         .inputs = {0, 1, 2, NOINP},
+                     },
+                     SynthUnitNode{
+                         .unit = ModGentleStart<kSampleRate * 2>,
+                         .inputs = {3, NOINP, NOINP, NOINP},
+                     }>;
 
 int main(int argc, char** argv) {
     Synth synth{
-        {SynthUnitNode{e_min_part1,
-                       {kSynthUnitNoInput, kSynthUnitNoInput, kSynthUnitNoInput,
-                        kSynthUnitNoInput}},
-         SynthUnitNode{e_min_part2,
-                       {kSynthUnitInputs, kSynthUnitNoInput, kSynthUnitNoInput,
-                        kSynthUnitNoInput}},
-         SynthUnitNode{ModMixer, {0, 1, kSynthUnitNoInput, kSynthUnitNoInput}}},
+        {SynthUnitNode{e_min_part1, {NOINP, NOINP, NOINP, NOINP}},
+         SynthUnitNode{e_min_part2, {kSynthUnitInputs, NOINP, NOINP, NOINP}},
+         SynthUnitNode{ModMixer, {0, 1, NOINP, NOINP}}},
         2};
     MiniaudioOutput player{synth.GetOutputBuffer(), kSampleRate};
     synth.Start();

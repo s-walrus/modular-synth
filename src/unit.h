@@ -8,7 +8,7 @@
 typedef int32_t SynthData;
 typedef SynthData (*SynthUnit)(SynthData, SynthData, SynthData, SynthData);
 const std::size_t kSynthUnitInputs = 4;
-const std::int32_t kSynthUnitNoInput = -5;
+const std::int32_t kSynthNoInput = -5;
 
 // SynthUnitNode describes SynthUnit as a node of a tree
 struct SynthUnitNode {
@@ -110,7 +110,7 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
             std::size_t buf_input;
             if (input >= 0) {
                 buf_input = buf_outputs_offset + input;
-            } else if (input == kSynthUnitNoInput) {
+            } else if (input == kSynthNoInput) {
                 buf_input = 0;
             } else {
                 buf_input = -input;
@@ -119,4 +119,13 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
         }
     }
     return traversal;
+}
+
+template <SynthUnitNode... units>
+SynthData CompileSynthUnit(SynthData i1, SynthData i2, SynthData i3,
+                           SynthData i4) {
+    return RunSynthUnitTree<sizeof...(units),
+                            MakeSynthUnitTreeTraversal<sizeof...(units)>(
+                                std::array<SynthUnitNode, sizeof...(units)>{
+                                    units...})>(i1, i2, i3, i4);
 }
