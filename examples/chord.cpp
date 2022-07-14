@@ -1,13 +1,12 @@
 #include <cmath>
 #include <iostream>
 
+#include "../src/modules.h"
 #include "../src/player.h"
 #include "../src/synth.h"
 #include "../src/unit.h"
 
 const auto NOINP = kSynthNoInput;
-
-const std::size_t kSampleRate = 48000;
 
 template <std::size_t freq>
 SynthData ModSine(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
@@ -31,9 +30,9 @@ SynthData ModMixer(SynthData i1, SynthData i2, SynthData i3, SynthData i4) {
     return i1 + i2 + i3 + i4;
 }
 
-constexpr SynthUnit e_min_part1 =
+SynthUnit e_min_part1 =
     CompileSynthUnit<SynthUnitNode{
-                         .unit = ModSine<196000>,
+                         .unit = ModSineWave<196000>,
                          .inputs = {NOINP, NOINP, NOINP, NOINP},
                      },
                      SynthUnitNode{
@@ -53,7 +52,7 @@ constexpr SynthUnit e_min_part1 =
                          .inputs = {3, NOINP, NOINP, NOINP},
                      }>;
 
-constexpr SynthUnit e_min_part2 =
+SynthUnit e_min_part2 =
     CompileSynthUnit<SynthUnitNode{
                          .unit = ModSine<130810>,
                          .inputs = {NOINP, NOINP, NOINP, NOINP},

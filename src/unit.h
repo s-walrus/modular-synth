@@ -121,11 +121,11 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
     return traversal;
 }
 
-template <SynthUnitNode... units>
+template <SynthUnitNode... nodes>
 SynthData CompileSynthUnit(SynthData i1, SynthData i2, SynthData i3,
                            SynthData i4) {
-    return RunSynthUnitTree<sizeof...(units),
-                            MakeSynthUnitTreeTraversal<sizeof...(units)>(
-                                std::array<SynthUnitNode, sizeof...(units)>{
-                                    units...})>(i1, i2, i3, i4);
+    return RunSynthUnitTree<sizeof...(nodes),
+                            MakeSynthUnitTreeTraversal<sizeof...(nodes)>(
+                                std::array<SynthUnitNode, sizeof...(nodes)>{
+                                    nodes...})>(i1, i2, i3, i4);
 }

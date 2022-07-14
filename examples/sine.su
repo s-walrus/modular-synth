@@ -1,0 +1,4 @@
+unit main_su:
+    ModSineWave(246940, 1073741824) as sine
+    modAmp<10>(sine, 10)
+
