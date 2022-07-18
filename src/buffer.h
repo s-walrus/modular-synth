@@ -34,7 +34,10 @@ public:
         assert(CanPost());
         buf = dest;
         generation.fetch_add(1, std::memory_order_seq_cst);
-        receiver_cnt.store(0, std::memory_order_seq_cst);
+        // WARNING If ReceiveTo is called between these instructions,
+        // n_consumers temporarily stop reflecting real consumer count for
+        // current generation
+        receiver_cnt.fetch_sub(n_consumers, std::memory_order_seq_cst);
         return generation.load();
     }
 
