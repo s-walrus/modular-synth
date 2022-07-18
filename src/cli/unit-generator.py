@@ -20,14 +20,14 @@ class Unit:
         return self.__alias_to_index.get(alias, None)
 
     def add_module(
-        self, name: str, parameters: list, sources: list, alias: str | None = None
+        self, name: str, parameters: list, sources: list, aliases: list
     ):
         if name.startswith("Mod"):
             parameters.append(str(self.__next_mod_uid))
             self.__next_mod_uid += 1
         self.__modules.append((name, parameters, sources))
         module_id = len(self.__modules) - 1
-        if alias:
+        for alias in aliases:
             self.__alias_to_index[alias] = module_id
         return module_id
 
@@ -111,6 +111,8 @@ def tokenize_module(module: str):
 
 
 def tokenize_sources(sources: str):
+    if not sources:
+        return
     for item in sources.split(","):
         item = item.strip()
         if is_number(item):
@@ -125,27 +127,27 @@ def tokenize_sources(sources: str):
             raise Exception(f'Invalid source argument: "{item}".')
 
 
-def process_and_add_module(unit: Unit, module: Token, alias: str | None = None):
+def process_and_add_module(unit: Unit, module: Token, aliases: list):
     name, params, sources = module.content
     source_ids = [process_source_and_get_id(unit, source) for source in sources]
     param_strs = [token.content for token in params]
-    return unit.add_module(name, param_strs, source_ids, alias)
+    return unit.add_module(name, param_strs, source_ids, aliases)
 
 
 def process_source_and_get_id(unit: Unit, source: Token):
     if source.type == "source_id":
-        return int(source.content)
+        return unit.get_module_id(str(source.content))
     elif source.type == "var_name":
         mod_id = unit.get_module_id(source.content)
         if mod_id is None:
             # Assuming var_name refers to an existing unit name
-            return unit.add_module(name=source.content, parameters=[], sources=[])
+            return unit.add_module(name=source.content, parameters=[], sources=[], aliases=[])
         else:
             return mod_id
     elif source.type == "number":
-        return unit.add_module(name="modConst", parameters=[source.content], sources=[])
+        return unit.add_module(name="modConst", parameters=[source.content], sources=[], aliases=[])
     elif source.type == "module":
-        return process_and_add_module(unit, source.content)
+        return process_and_add_module(unit, source.content, [])
     raise Exception(
         f'Invalid module source was encountered while processing unit "{unit.get_name()}"'
     )
@@ -153,12 +155,14 @@ def process_source_and_get_id(unit: Unit, source: Token):
 
 if __name__ == "__main__":
     current_unit = Unit()
+    numbered_module_cnt = 0
     for line in sys.stdin:
         line = line.strip()
         if re.fullmatch(unit_regex, line):
             current_unit.dump_and_clear()
             name = re.fullmatch(unit_regex, line).group(1)  # type: ignore
             current_unit.set_name(name)
+            numbered_module_cnt = 0
         elif re.match(synth_module_regex, line):
             match = re.match(synth_module_regex, line)
             appendix = line[len(match.group(0)):]  # type: ignore
@@ -173,7 +177,11 @@ if __name__ == "__main__":
                 if not is_valid_variable_name(alias):
                     raise Exception(f'"{alias}" is not a valid alias name.')
             module_str = match.group(0)  # type: ignore
-            process_and_add_module(current_unit, tokenize_module(module_str), alias)
+            aliases = [str(numbered_module_cnt)]
+            if alias:
+                aliases.append(alias)
+            process_and_add_module(current_unit, tokenize_module(module_str), aliases)
+            numbered_module_cnt += 1
         elif line and line[0] != "#":
             sys.stderr.write(f'WARNING: skipping non-empty line: "{line}".\n')
     current_unit.dump_and_clear()
