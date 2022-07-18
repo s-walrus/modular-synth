@@ -1,4 +1,34 @@
 unit main_su:
-    ModSineWave(246940, 1073741824) as sine
-    modAmp<10>(sine, 10)
+    ModGentleStart<1000, 70000> as vibrato_gain
+    modAmp<1000>(3000, vibrato_gain) as vibrato_freq
+    ModSineWave(vibrato_freq, 3000) as vibrato_delta
+    modAdd(vibrato_delta, 1000000) as vibrato
+    modAmp<1000000>(vibrato, 293680) as sine_freq
+    ModTone<6, 0, 0, 0>(sine_freq, 60000000) as D_low
+
+    ModGentleStart<1000, 50000> as vibrato_gain
+    modAmp<1000>(8500, vibrato_gain) as vibrato_freq
+    ModSineWave(vibrato_freq, 1000) as vibrato_delta
+    modAdd(vibrato_delta, 1000000) as vibrato
+    modAmp<1000000>(vibrato, 440000) as sine_freq
+    ModTone<6, 5, 2, 2>(sine_freq, 50000000) as A
+
+    ModGentleStart<1000, 4000> as vibrato_gain
+    modAmp<1000>(4200, vibrato_gain) as vibrato_freq
+    ModSineWave(vibrato_freq, 2500) as vibrato_delta
+    modAdd(vibrato_delta, 1000000) as vibrato
+    modAmp<1000000>(vibrato, 587360) as sine_freq
+    ModTone<6, 3, 2, 2>(sine_freq, 40000000) as D_high
+
+    ModGentleStart<1000, 30000> as vibrato_gain
+    modAmp<1000>(8000, vibrato_gain) as vibrato_freq
+    ModSineWave(vibrato_freq, 6000) as vibrato_delta
+    modAdd(vibrato_delta, 1000000) as vibrato
+    modAmp<1000000>(vibrato, 740000) as sine_freq
+    ModTone<6, 1, 1, 0>(sine_freq, 30000000) as F_sharp
+
+    modAdd(D_low, A, D_high) as chord_part
+    modAdd(chord_part, F_sharp) as chord
+    ModGentleStart<1000, 8000> as global_modifier
+    modAmp<1000>(global_modifier, chord) as almost_final
 
