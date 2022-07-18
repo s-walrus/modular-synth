@@ -10,6 +10,10 @@ typedef SynthData (*SynthUnit)(SynthData, SynthData, SynthData, SynthData);
 const std::size_t kSynthUnitInputs = 4;
 const std::int32_t kSynthNoInput = -5;
 
+inline SynthData DummySynthUnit(SynthData, SynthData, SynthData, SynthData) {
+    return 0;
+}
+
 // SynthUnitNode describes SynthUnit as a node of a tree
 struct SynthUnitNode {
     SynthUnit unit;
@@ -37,7 +41,7 @@ struct SynthUnitTreeTraversal {
 template <std::size_t n_nodes, SynthUnitTreeTraversal<n_nodes> traversal>
 static constexpr SynthData RunSynthUnitTree(SynthData i1, SynthData i2,
                                             SynthData i3, SynthData i4) {
-    SynthData buf[traversal.buf_size];
+    [[maybe_unused]] SynthData buf[traversal.buf_size];
     buf[0] = 0;
     buf[1] = i1;
     buf[2] = i2;
@@ -45,10 +49,6 @@ static constexpr SynthData RunSynthUnitTree(SynthData i1, SynthData i2,
     buf[4] = i4;
 #pragma clang loop unroll(full)
     for (auto step : traversal.steps) {
-        // FIXME must be optimized away but I'm not sure if it actually will
-        if (step.func == nullptr) {
-            continue;
-        }
         // FIXME is it possible remove code duplication here?
         buf[step.output] = step.func(buf[step.inputs[0]], buf[step.inputs[1]],
                                      buf[step.inputs[2]], buf[step.inputs[3]]);
@@ -67,7 +67,11 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
             : nodes(nodes) {}
 
         constexpr Deque<std::size_t, n_nodes> MakeTopsort() {
-            dfs(n_nodes - 1);
+            for (std::size_t i = 0; i < n_nodes; ++i) {
+                if (!used[i]) {
+                    dfs(i);
+                }
+            }
             return topsort;
         }
 
@@ -96,10 +100,10 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
 
     SynthUnitTreeTraversal<n_nodes> traversal{
         .buf_size = 1 + kSynthUnitInputs + n_nodes,
-        .steps = {{{nullptr}}},
     };
     const std::size_t buf_outputs_offset = 5;
-    for (std::size_t i = 0; !topsort.Empty(); ++i, topsort.PopFront()) {
+    std::size_t i = 0;
+    for (; !topsort.Empty(); ++i, topsort.PopFront()) {
         std::size_t node_i = topsort.Front();
         traversal.steps[i] = {
             .func = nodes[node_i].unit,
@@ -117,6 +121,13 @@ constexpr SynthUnitTreeTraversal<n_nodes> MakeSynthUnitTreeTraversal(
             }
             traversal.steps[i].inputs[input_i] = buf_input;
         }
+    }
+    for (; i < traversal.steps.size(); ++i) {
+        traversal.steps[i] = {
+            .func = DummySynthUnit,
+            .inputs = {0},
+            .output = 0,
+        };
     }
     return traversal;
 }
